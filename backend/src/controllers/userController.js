@@ -2,6 +2,7 @@
 import pool from '../db/connection.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { logLogin, logLogout } from '../utils/logger.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -91,6 +92,17 @@ export async function login(req, res) {
             { expiresIn: '24h' }
         );
 
+        // 로그인 로그 기록
+        const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+        const userAgent = req.headers['user-agent'];
+        
+        await logLogin({
+            userId: user.id,
+            email: user.email,
+            ipAddress,
+            userAgent
+        });
+
         console.log(`✅ 로그인 성공: ${email}`);
         res.json({
             message: '로그인 성공',
@@ -146,6 +158,9 @@ export async function deleteUser(req, res) {
     }
 
     try {
+        // 로그아웃 로그 기록 (회원탈퇴 전)
+        await logLogout(userId);
+        
         // 사용자 삭제
         await pool.query('DELETE FROM users WHERE id = ?', [userId]);
 
@@ -154,6 +169,27 @@ export async function deleteUser(req, res) {
 
     } catch (error) {
         console.error('❌ 회원탈퇴 오류:', error);
+        res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    }
+}
+
+// 로그아웃 처리 (프론트엔드에서 호출)
+export async function logout(req, res) {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+        return res.status(401).json({ error: '인증이 필요합니다.' });
+    }
+
+    try {
+        // 로그아웃 로그 기록
+        await logLogout(userId);
+
+        console.log(`✅ 로그아웃 완료: 사용자 ID ${userId}`);
+        res.json({ message: '로그아웃이 완료되었습니다.' });
+
+    } catch (error) {
+        console.error('❌ 로그아웃 오류:', error);
         res.status(500).json({ error: '서버 오류가 발생했습니다.' });
     }
 }

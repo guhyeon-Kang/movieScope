@@ -29,6 +29,9 @@ function Navbar() {
                 </Button>
                 {isLoggedIn ? (
                     <>
+                        <Button as={Link} to="/admin" colorScheme="purple" variant="ghost" mr={2}>
+                            관리자
+                        </Button>
                         <Button as={Link} to="/profile" colorScheme="teal" variant="ghost" mr={2}>
                             내정보
                         </Button>

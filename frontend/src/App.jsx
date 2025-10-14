@@ -7,6 +7,7 @@ import MovieDetailPage from './pages/MovieDetailPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfileEditPage from './pages/ProfileEditPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
                 <Route path="/profile" element={<ProfileEditPage />} />
+                <Route path="/admin" element={<AdminDashboardPage />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </Box>

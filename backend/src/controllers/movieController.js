@@ -2,6 +2,7 @@
 import { fetchMoviesByKeyword } from '../utils/kmdbFetch.js';
 import { createEmbedding } from '../utils/embedding.js';
 import { initQdrant, saveVector } from '../utils/qdrantClient.js';
+import { logCollection } from '../utils/logger.js';
 import pool from '../db/connection.js';
 
 export async function importMovies(req, res) {
@@ -11,13 +12,25 @@ export async function importMovies(req, res) {
     }
 
     console.log(`🔎 [S1-R31] '${keyword}' 영화 데이터 수집 시작 (페이지 ${page})`);
+    const startTime = Date.now();
 
-    // 1️⃣ KMDb 데이터 수집
-    const movies = await fetchMoviesByKeyword(keyword, parseInt(page));
-    if (!movies || movies.length === 0) {
-        console.log('✅ 0 movies saved');
-        return res.status(200).json({ message: `No movies found for '${keyword}'` });
-    }
+    try {
+        // 1️⃣ KMDb 데이터 수집
+        const movies = await fetchMoviesByKeyword(keyword, parseInt(page));
+        if (!movies || movies.length === 0) {
+            console.log('✅ 0 movies saved');
+            
+            // 로그 기록
+            await logCollection({
+                keyword,
+                pageNumber: parseInt(page),
+                resultCode: 'NO_RESULTS',
+                moviesFound: 0,
+                processingTimeMs: Date.now() - startTime
+            });
+            
+            return res.status(200).json({ message: `No movies found for '${keyword}'` });
+        }
 
     // 2️⃣ MySQL 저장 (중복 방지)
     let dbCount = 0;
@@ -64,10 +77,41 @@ export async function importMovies(req, res) {
         }
     }
 
-    console.log(`🎬 총 ${successCount}건의 벡터 저장 완료`);
-    res.json({
-        message: `S1-R31~32 완료: '${keyword}' 영화 ${movies.length}건 중 ${successCount}건 벡터화 완료`,
-    });
+        console.log(`🎬 총 ${successCount}건의 벡터 저장 완료`);
+        
+        // 로그 기록
+        const processingTime = Date.now() - startTime;
+        await logCollection({
+            keyword,
+            pageNumber: parseInt(page),
+            resultCode: successCount > 0 ? 'SUCCESS' : 'PARTIAL',
+            moviesFound: movies.length,
+            moviesSaved: dbCount,
+            embeddingCreated: successCount,
+            vectorsSaved: successCount,
+            processingTimeMs: processingTime
+        });
+        
+        res.json({
+            message: `S1-R31~32 완료: '${keyword}' 영화 ${movies.length}건 중 ${successCount}건 벡터화 완료`,
+        });
+
+    } catch (error) {
+        console.error('❌ 영화 수집 오류:', error);
+        
+        // 에러 로그 기록
+        await logCollection({
+            keyword,
+            pageNumber: parseInt(page),
+            resultCode: 'FAILED',
+            moviesFound: movies?.length || 0,
+            moviesSaved: dbCount || 0,
+            errorMessage: error.message,
+            processingTimeMs: Date.now() - startTime
+        });
+        
+        res.status(500).json({ error: '영화 수집 중 오류가 발생했습니다.' });
+    }
 }
 
 // 영화 상세 조회

@@ -1,17 +1,38 @@
 import { useState } from 'react';
-import { VStack, Input, Button, Text, useToast } from '@chakra-ui/react';
+import { VStack, Input, Button, Text, useToast, InputGroup, InputRightElement, IconButton, FormControl, FormLabel, FormErrorMessage, Box } from '@chakra-ui/react';
+// 아이콘 대신 텍스트 사용
 import { userApi } from '../api/userApi.js';
 import { useNavigate } from 'react-router-dom';
 
 function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
     const toast = useToast();
     const navigate = useNavigate();
 
     const handleLogin = async () => {
-        if (!email || !password) {
+        // 기본 유효성 검사
+        let hasError = false;
+        
+        if (!email) {
+            setEmailError('이메일을 입력해주세요.');
+            hasError = true;
+        } else {
+            setEmailError('');
+        }
+        
+        if (!password) {
+            setPasswordError('비밀번호를 입력해주세요.');
+            hasError = true;
+        } else {
+            setPasswordError('');
+        }
+
+        if (hasError) {
             toast({
                 title: '입력 오류',
                 description: '이메일과 비밀번호를 모두 입력해주세요.',
@@ -38,6 +59,12 @@ function LoginPage() {
             navigate('/');
         } catch (error) {
             const errorMessage = error.response?.data?.error || '로그인에 실패했습니다.';
+            
+            // 로그인 실패 시 에러 표시
+            if (errorMessage.includes('잘못되었습니다')) {
+                setPasswordError('이메일 또는 비밀번호가 잘못되었습니다.');
+            }
+            
             toast({
                 title: '로그인 실패',
                 description: errorMessage,
@@ -51,25 +78,72 @@ function LoginPage() {
     };
 
     return (
-        <VStack spacing={4} py={20}>
-            <Text fontSize="2xl" fontWeight="bold">
+        <VStack spacing={6} py={20} maxW="400px" mx="auto">
+            <Text fontSize="2xl" fontWeight="bold" mb={4}>
                 로그인
             </Text>
-            <Input placeholder="이메일" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Input
-                placeholder="비밀번호"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-            />
-            <Button 
-                colorScheme="blue" 
-                onClick={handleLogin}
-                isLoading={loading}
-                loadingText="로그인 중..."
-            >
-                로그인
-            </Button>
+            
+            <FormControl isInvalid={!!emailError}>
+                <FormLabel>이메일</FormLabel>
+                <Input 
+                    type="email"
+                    placeholder="example@email.com" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)}
+                    focusBorderColor="blue.400"
+                />
+                <FormErrorMessage>{emailError}</FormErrorMessage>
+            </FormControl>
+
+            <FormControl isInvalid={!!passwordError}>
+                <FormLabel>비밀번호</FormLabel>
+                <InputGroup>
+                    <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="비밀번호를 입력해주세요"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        focusBorderColor="blue.400"
+                    />
+                    <InputRightElement>
+                        <IconButton
+                            aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? '🙈' : '👁️'}
+                        </IconButton>
+                    </InputRightElement>
+                </InputGroup>
+                <FormErrorMessage>{passwordError}</FormErrorMessage>
+            </FormControl>
+
+            <Box w="100%">
+                <Button 
+                    colorScheme="blue" 
+                    size="lg"
+                    width="100%"
+                    onClick={handleLogin}
+                    isLoading={loading}
+                    loadingText="로그인 중..."
+                    isDisabled={!email || !password}
+                >
+                    로그인
+                </Button>
+            </Box>
+
+            <Text fontSize="sm" color="gray.600" textAlign="center">
+                계정이 없으신가요?{' '}
+                <Button 
+                    variant="link" 
+                    colorScheme="blue" 
+                    size="sm"
+                    onClick={() => navigate('/signup')}
+                >
+                    회원가입
+                </Button>
+            </Text>
         </VStack>
     );
 }

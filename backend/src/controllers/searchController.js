@@ -2,6 +2,7 @@
 import { createEmbedding } from '../utils/embedding.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
+import pool from '../db/connection.js';
 dotenv.config();
 
 const baseUrl = process.env.QDRANT_URL;
@@ -48,17 +49,25 @@ export async function searchMovies(req, res) {
 
         console.log(`🎬 ${results.length}건의 유사 결과 반환`);
 
-        // 3️⃣ 결과 정제
-        const formatted = results.map((r) => ({
-            id: r.id,
-            score: r.score,
-            title: r.payload?.title || '제목 없음',
-            genre: r.payload?.genre || '',
-            nation: r.payload?.nation || '',
-            director: r.payload?.director || '',
-            actors: r.payload?.actors || '',
-            plot: r.payload?.plot || '',
-            poster: r.payload?.poster || '',
+        // 3️⃣ 결과 정제 및 MySQL ID 조회
+        const formatted = await Promise.all(results.map(async (r) => {
+            // MySQL에서 실제 영화 ID 조회
+            const [dbMovies] = await pool.query(
+                'SELECT id FROM movies WHERE title = ? LIMIT 1',
+                [r.payload?.title]
+            );
+            
+            return {
+                id: dbMovies.length > 0 ? dbMovies[0].id : r.id, // MySQL ID 우선, 없으면 Qdrant ID
+                score: r.score,
+                title: r.payload?.title || '제목 없음',
+                genre: r.payload?.genre || '',
+                nation: r.payload?.nation || '',
+                director: r.payload?.director || '',
+                actors: r.payload?.actors || '',
+                plot: r.payload?.plot || '',
+                poster: r.payload?.poster || '',
+            };
         }));
 
         return res.json({ query, count: formatted.length, results: formatted });

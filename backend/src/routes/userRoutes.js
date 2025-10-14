@@ -5,6 +5,7 @@ import {
     login, 
     updateProfile, 
     deleteUser, 
+    logout,
     authenticateToken 
 } from '../controllers/userController.js';
 
@@ -21,5 +22,8 @@ router.put('/profile', authenticateToken, updateProfile);
 
 // DELETE /api/users - 회원탈퇴
 router.delete('/', authenticateToken, deleteUser);
+
+// POST /api/users/logout - 로그아웃
+router.post('/logout', authenticateToken, logout);
 
 export default router;

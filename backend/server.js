@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import movieRoutes from './src/routes/movieRoutes.js';
 import searchRoutes from './src/routes/searchRoutes.js';
 import userRoutes from './src/routes/userRoutes.js';
+import adminRoutes from './src/routes/adminRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -31,6 +32,9 @@ app.use('/api', searchRoutes);
 
 // 사용자 인증 관련 API
 app.use('/api/users', userRoutes);
+
+// 관리자 API
+app.use('/api/admin', adminRoutes);
 
 // 서버 시작
 const PORT = process.env.PORT || 5000;
