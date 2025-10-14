@@ -1,56 +1,69 @@
-// ✅ src/controllers/searchController.js
+// ✅ 자연어 검색 컨트롤러 (Qdrant 1.15.5 대응)
+import { createEmbedding } from '../utils/embedding.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const SOLAR_KEY = process.env.SOLAR_KEY;
-const QDRANT_URL = process.env.QDRANT_URL;
-const QDRANT_API_KEY = process.env.QDRANT_API_KEY;
-const COLLECTION = process.env.QDRANT_COLLECTION;
+const baseUrl = process.env.QDRANT_URL;
+const collection = process.env.QDRANT_COLLECTION;
+const headers = {
+    'Content-Type': 'application/json',
+    'api-key': process.env.QDRANT_API_KEY,
+};
 
 export async function searchMovies(req, res) {
+    const { query } = req.query;
+    if (!query || query.trim() === '') {
+        return res.status(400).json({ error: 'query required' });
+    }
+
+    console.log(`🔍 [S1-R33] 자연어 검색: ${query}`);
+
     try {
-        const { query } = req.body;
-        if (!query) return res.status(400).json({ error: 'query is required' });
+        // 1️⃣ 검색 쿼리 임베딩 생성
+        const embedding = await createEmbedding(query);
+        if (!embedding || !Array.isArray(embedding)) {
+            return res.status(500).json({ error: 'embedding failed' });
+        }
+        console.log(`✅ 임베딩 생성 완료 (4096차원)`);
 
-        console.log(`🔍 [S1-R33] 자연어 검색: ${query}`);
-
-        // 1️⃣ 임베딩 생성
-        const embRes = await axios.post(
-            'https://api.upstage.ai/v1/embeddings',
-            { model: 'solar-embedding-1-large-query', input: query },
-            { headers: { Authorization: `Bearer ${SOLAR_KEY}` } }
-        );
-        const embedding = embRes.data.data[0].embedding;
-        console.log(`✅ 임베딩 생성 완료 (${embedding.length}차원)`);
-
-        // 2️⃣ Qdrant 유사 벡터 검색 (v1.15.5 공식 문법)
-        const qdrantRes = await axios.post(
-            `${QDRANT_URL}/collections/${COLLECTION}/points/query`,
+        // 2️⃣ Qdrant 유사도 검색
+        const response = await axios.post(
+            `${baseUrl}/collections/${collection}/points/search`,
             {
-                query: embedding, // ✅ vector → query
-                using: 'default', // ✅ named vector 지정
+                vector: {
+                    name: 'default', // ✅ named vector 명시적 지정
+                    vector: embedding, // ✅ 4096차원 임베딩 배열
+                },
                 limit: 5,
                 with_payload: true,
             },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'api-key': QDRANT_API_KEY,
-                },
-            }
+            { headers }
         );
 
-        const results = qdrantRes.data.result.points.map((p) => ({
-            id: p.id,
-            score: p.score,
-            payload: p.payload || {},
-        }));
+        const results = response.data?.result || [];
+        if (results.length === 0) {
+            return res.json({ message: 'No similar movies found', results: [] });
+        }
 
         console.log(`🎬 ${results.length}건의 유사 결과 반환`);
-        res.json(results);
+
+        // 3️⃣ 결과 정제
+        const formatted = results.map((r) => ({
+            id: r.id,
+            score: r.score,
+            title: r.payload?.title || '제목 없음',
+            genre: r.payload?.genre || '',
+            nation: r.payload?.nation || '',
+            director: r.payload?.director || '',
+            actors: r.payload?.actors || '',
+            plot: r.payload?.plot || '',
+            poster: r.payload?.poster || '',
+        }));
+
+        return res.json({ query, count: formatted.length, results: formatted });
     } catch (err) {
         console.error('❌ Search Error:', err.response?.data || err.message);
-        res.status(500).json({ error: 'Search failed' });
+        return res.status(500).json({ error: 'search failed' });
     }
 }

@@ -1,0 +1,25 @@
+// 사용자 인증 라우터
+import express from 'express';
+import { 
+    signup, 
+    login, 
+    updateProfile, 
+    deleteUser, 
+    authenticateToken 
+} from '../controllers/userController.js';
+
+const router = express.Router();
+
+// POST /api/users/signup - 회원가입
+router.post('/signup', signup);
+
+// POST /api/users/login - 로그인
+router.post('/login', login);
+
+// PUT /api/users/profile - 프로필 수정 (비밀번호 변경)
+router.put('/profile', authenticateToken, updateProfile);
+
+// DELETE /api/users - 회원탈퇴
+router.delete('/', authenticateToken, deleteUser);
+
+export default router;

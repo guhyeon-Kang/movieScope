@@ -11,7 +11,7 @@ const headers = {
     'api-key': process.env.QDRANT_API_KEY,
 };
 
-// ✅ 최신 Qdrant: named vector "default"
+// ✅ 최신 Qdrant 컬렉션 초기화 (named vector = default)
 export async function initQdrant() {
     try {
         await axios.put(
@@ -19,8 +19,7 @@ export async function initQdrant() {
             {
                 vectors: {
                     default: {
-                        // ✅ named vector 필드
-                        size: 4096,
+                        size: 4096, // SOLAR 임베딩 크기
                         distance: 'Cosine',
                     },
                 },
@@ -29,32 +28,34 @@ export async function initQdrant() {
         );
         console.log(`✅ Qdrant collection '${collection}' ready`);
     } catch (err) {
-        console.error('❌ Qdrant init error:', err.message);
+        if (err.response?.status === 409) {
+            console.log(`⚠️ Collection '${collection}' already exists — skip init`);
+        } else {
+            console.error('❌ Qdrant init error:', err.response?.data || err.message);
+        }
     }
 }
 
-export async function saveVector(movieId, vector) {
+// ✅ 벡터 및 payload 저장
+export async function saveVector(movieId, vector, payload = {}) {
     try {
-        // ✅ Qdrant가 허용하는 UUID 형식으로 변환
-        const id =
-            typeof movieId === 'string'
-                ? uuidv4() // 문자열이면 UUID로 대체
-                : movieId;
+        const id = typeof movieId === 'number' || /^[0-9a-fA-F-]{36}$/.test(movieId) ? movieId : uuidv4();
 
         await axios.put(
             `${baseUrl}/collections/${collection}/points?wait=true`,
             {
                 points: [
                     {
-                        id: id,
+                        id,
                         vectors: { default: vector },
+                        payload,
                     },
                 ],
             },
             { headers }
         );
 
-        console.log(`✅ Qdrant 저장 완료: ${movieId} (as ${id})`);
+        console.log(`✅ Qdrant 저장 완료: ${payload.title || movieId}`);
     } catch (err) {
         console.error('❌ Qdrant save error:', err.response?.data || err.message);
     }
