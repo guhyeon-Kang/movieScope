@@ -17,7 +17,11 @@ export default function MovieCard({ movie }) {
             onClick={() => navigate(`/movie/${movie.id}`)} // ✅ 클릭 시 이동
         >
             <Image
-                src={movie.poster || '/no-poster.png'}
+                src={
+                    movie.poster
+                        ? movie.poster.replace(/^http:\/\//, 'https://') // 🔹 HTTP → HTTPS 변환
+                        : '/no-poster.png'
+                }
                 alt={movie.title}
                 objectFit="cover"
                 w="100%"

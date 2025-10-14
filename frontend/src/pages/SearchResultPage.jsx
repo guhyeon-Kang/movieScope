@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { VStack, Text, SimpleGrid, Spinner, useToast } from '@chakra-ui/react';
 import { movieApi } from '../api/movieApi.js';
-import MovieCard from '../components/MovieCard';
+import MovieCard from '../components/MovieCard.jsx';
 
 function SearchResultPage() {
     const location = useLocation();
@@ -16,7 +16,8 @@ function SearchResultPage() {
         if (!query) return;
         setLoading(true);
 
-        movieApi.searchMovies(query)
+        movieApi
+            .searchMovies(query)
             .then((data) => {
                 setResults(data.results || []);
             })
