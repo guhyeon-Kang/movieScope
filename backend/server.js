@@ -2,13 +2,19 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import movieRoutes from './src/routes/movieRoutes.js';
+import searchRoutes from './src/routes/searchRoutes.js'; // ← 이미 있을 수 있음
 
 dotenv.config();
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// S1-B03 영화관리: 데이터 수집
-app.use('/api/movies', movieRoutes);
+// ✅ 여기서 movieRoutes 연결
+app.use('/api/import', movieRoutes);
+app.use('/api/search', searchRoutes);
 
-app.listen(5000, () => console.log('✅ MovieScope Backend running on port 5000'));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`✅ MovieScope Backend running on port ${PORT}`);
+});
