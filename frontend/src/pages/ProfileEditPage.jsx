@@ -65,6 +65,8 @@ function ProfileEditPage() {
             });
             
             localStorage.removeItem('token');
+            // localStorage 변경을 알리는 커스텀 이벤트 발생
+            window.dispatchEvent(new Event('localStorageChange'));
             navigate('/');
         } catch (error) {
             const errorMessage = error.response?.data?.error || '회원탈퇴에 실패했습니다.';

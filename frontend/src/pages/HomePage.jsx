@@ -7,7 +7,7 @@ function HomePage() {
             <Text fontSize="3xl" fontWeight="bold">
                 🎥 MovieScope
             </Text>
-            <Text color="gray.600">자연어로 영화를 검색해보세요!</Text>
+            <Text color="gray.600">보고싶은 영화를 검색해보세요!</Text>
             <SearchBar />
         </VStack>
     );

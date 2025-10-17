@@ -33,4 +33,10 @@ export const userApi = {
         const response = await apiClient.delete('/users');
         return response.data;
     },
+
+    // 사용자 정보 조회
+    getUserInfo: async () => {
+        const response = await apiClient.get('/users/me');
+        return response.data;
+    },
 };

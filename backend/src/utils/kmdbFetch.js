@@ -28,11 +28,21 @@ export async function fetchMoviesByKeyword(keyword, page = 1) {
         const filtered = results.filter((movie) => {
             const title = movie.title || '';
             const type = movie.type || '';
+            const genre = movie.genre || '';
+            
+            // 에로 관련 키워드 필터링
+            const adultKeywords = ['에로', '성인', '19금', '야한', '섹스', '성인영화', '에로영화'];
+            const hasAdultContent = adultKeywords.some(keyword => 
+                title.toLowerCase().includes(keyword.toLowerCase()) ||
+                genre.toLowerCase().includes(keyword.toLowerCase())
+            );
+            
             return (
                 (type.includes('극영화') || type === '') &&
                 !title.includes('예능') &&
                 !title.includes('뮤직') &&
-                !title.includes('콘서트')
+                !title.includes('콘서트') &&
+                !hasAdultContent // 에로 콘텐츠 제외
             );
         });
 

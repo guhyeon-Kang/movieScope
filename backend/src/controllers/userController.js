@@ -37,9 +37,17 @@ export async function signup(req, res) {
 
         const userId = result.insertId;
 
+        // 관리자 권한 확인
+        const [adminUsers] = await pool.query(
+            'SELECT role FROM admins WHERE user_id = ?',
+            [userId]
+        );
+        const isAdmin = adminUsers.length > 0;
+        const role = isAdmin ? 'admin' : 'user';
+
         // JWT 토큰 생성
         const token = jwt.sign(
-            { userId, email },
+            { userId, email, role },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -48,7 +56,7 @@ export async function signup(req, res) {
         res.status(201).json({
             message: '회원가입이 완료되었습니다.',
             token,
-            user: { id: userId, email }
+            user: { id: userId, email, role }
         });
 
     } catch (error) {
@@ -85,9 +93,20 @@ export async function login(req, res) {
             return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다.' });
         }
 
+        // 관리자 권한 확인
+        const [adminUsers] = await pool.query(
+            'SELECT role FROM admins WHERE user_id = ?',
+            [user.id]
+        );
+        console.log('로그인 사용자 ID:', user.id);
+        console.log('관리자 권한 조회 결과:', adminUsers);
+        const isAdmin = adminUsers.length > 0;
+        const role = isAdmin ? 'admin' : 'user';
+        console.log('최종 권한:', role);
+
         // JWT 토큰 생성
         const token = jwt.sign(
-            { userId: user.id, email: user.email },
+            { userId: user.id, email: user.email, role },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -107,7 +126,7 @@ export async function login(req, res) {
         res.json({
             message: '로그인 성공',
             token,
-            user: { id: user.id, email: user.email }
+            user: { id: user.id, email: user.email, role }
         });
 
     } catch (error) {
@@ -190,6 +209,47 @@ export async function logout(req, res) {
 
     } catch (error) {
         console.error('❌ 로그아웃 오류:', error);
+        res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    }
+}
+
+// 사용자 정보 조회
+export async function getUserInfo(req, res) {
+    try {
+        const userId = req.user.userId;
+        
+        // 사용자 기본 정보 조회
+        const [users] = await pool.query(
+            'SELECT id, email, created_at FROM users WHERE id = ?',
+            [userId]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+        }
+
+        const user = users[0];
+
+        // 관리자 권한 확인
+        const [adminUsers] = await pool.query(
+            'SELECT role FROM admins WHERE user_id = ?',
+            [userId]
+        );
+        
+        const isAdmin = adminUsers.length > 0;
+        const role = isAdmin ? 'admin' : 'user';
+
+        res.json({
+            user: { 
+                id: user.id, 
+                email: user.email, 
+                role,
+                created_at: user.created_at 
+            }
+        });
+
+    } catch (error) {
+        console.error('❌ 사용자 정보 조회 오류:', error);
         res.status(500).json({ error: '서버 오류가 발생했습니다.' });
     }
 }

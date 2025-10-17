@@ -45,7 +45,68 @@ function MovieDetailPage() {
 
     return (
         <VStack spacing={6} py={10}>
-            <Image src={movie.poster || '/no-image.jpg'} alt={movie.title} h="400px" objectFit="cover" />
+            {/* 포스터 이미지 또는 대체 이미지 */}
+            {movie.poster && movie.poster.trim() !== '' ? (
+                <Image 
+                    src={movie.poster.replace(/^http:\/\//, 'https://')} 
+                    alt={movie.title} 
+                    h="400px" 
+                    objectFit="cover"
+                    borderRadius="lg"
+                    boxShadow="lg"
+                    onError={(e) => {
+                        // 이미지 로드 실패 시 대체 컴포넌트로 교체
+                        e.target.style.display = 'none';
+                        const fallback = e.target.nextElementSibling;
+                        if (fallback) fallback.style.display = 'flex';
+                    }}
+                />
+            ) : null}
+            
+            {/* 대체 이미지 컴포넌트 */}
+            <Box
+                display={movie.poster && movie.poster.trim() !== '' ? 'none' : 'flex'}
+                w="300px"
+                h="400px"
+                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+                align="center"
+                justify="center"
+                flexDirection="column"
+                color="white"
+                position="relative"
+                overflow="hidden"
+                borderRadius="lg"
+                boxShadow="lg"
+            >
+                {/* 배경 패턴 */}
+                <Box
+                    position="absolute"
+                    top="0"
+                    left="0"
+                    right="0"
+                    bottom="0"
+                    opacity="0.1"
+                    backgroundImage="url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle cx=\"50\" cy=\"50\" r=\"2\" fill=\"white\"/></svg>')"
+                    backgroundSize="20px 20px"
+                />
+                
+                {/* 메인 콘텐츠 */}
+                <Text fontSize="8xl" mb={4} opacity="0.8">🎬</Text>
+                <Text 
+                    fontSize="lg" 
+                    fontWeight="bold" 
+                    textAlign="center" 
+                    px={4}
+                    noOfLines={3}
+                    lineHeight="1.2"
+                >
+                    {movie.title}
+                </Text>
+                <Text fontSize="sm" opacity="0.7" mt={3}>
+                    포스터 이미지 없음
+                </Text>
+            </Box>
+            
             <Box maxW="600px" textAlign="left">
                 <Text fontSize="2xl" fontWeight="bold" mb={2}>
                     {movie.title}

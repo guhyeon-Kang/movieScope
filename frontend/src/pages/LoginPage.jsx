@@ -48,6 +48,9 @@ function LoginPage() {
             const data = await userApi.login(email, password);
             localStorage.setItem('token', data.token);
             
+            // localStorage 변경을 알리는 커스텀 이벤트 발생
+            window.dispatchEvent(new Event('localStorageChange'));
+            
             toast({
                 title: '로그인 성공',
                 description: '환영합니다!',

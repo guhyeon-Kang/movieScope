@@ -6,6 +6,7 @@ import {
     updateProfile, 
     deleteUser, 
     logout,
+    getUserInfo,
     authenticateToken 
 } from '../controllers/userController.js';
 
@@ -16,6 +17,9 @@ router.post('/signup', signup);
 
 // POST /api/users/login - 로그인
 router.post('/login', login);
+
+// GET /api/users/me - 사용자 정보 조회
+router.get('/me', authenticateToken, getUserInfo);
 
 // PUT /api/users/profile - 프로필 수정 (비밀번호 변경)
 router.put('/profile', authenticateToken, updateProfile);

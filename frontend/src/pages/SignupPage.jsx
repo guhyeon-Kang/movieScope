@@ -96,17 +96,22 @@ function SignupPage() {
 
         setLoading(true);
         try {
-            await userApi.signup(email, password);
+            const data = await userApi.signup(email, password);
+            
+            // 회원가입 성공 시 토큰 저장 및 자동 로그인
+            localStorage.setItem('token', data.token);
+            // localStorage 변경을 알리는 커스텀 이벤트 발생
+            window.dispatchEvent(new Event('localStorageChange'));
             
             toast({
                 title: '회원가입 완료',
-                description: '로그인 페이지로 이동합니다.',
+                description: '자동으로 로그인되었습니다.',
                 status: 'success',
                 duration: 3000,
                 isClosable: true,
             });
             
-            navigate('/login');
+            navigate('/');
         } catch (error) {
             const errorMessage = error.response?.data?.error || '회원가입에 실패했습니다.';
             
